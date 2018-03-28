@@ -36,8 +36,6 @@ function init(data) {
 
 var holder = document.getElementById('json-holder');
 
-// For instance:
-// holder.value = `{"query": {"bool": {"filter": {"bool": {"must_not": [{"term": {"block_up_next": true}}], "must": [{"term": {"is_public": true}}, {"range": {"quality_score": {"gte": 0.2}}}, {"range": {"plays": {"gte": 10}}}]}}, "must": {"function_score": {"query": {"more_like_this": {"fields": ["discover_tag", "genre", "cloudcast_name", "owner.name"], "max_query_terms": 12, "like": [{"_type": "cloudcast", "_id": 150843434, "_index": "mixcloud_search_read"}], "min_term_freq": 1}}, "functions": [{"field_value_factor": {"field": "owner.boost"}}]}}}}}`;
 var pass = document.getElementById('pass');
 var url = document.getElementById('url');
 var user = document.getElementById('user');
