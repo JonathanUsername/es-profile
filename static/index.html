@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" type="text/css"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+      integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w="
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" type="text/css"
+      href="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.css"
+      integrity="sha256-w762vSe6WGrkVZ7gEOpnn2Y+FSmAGlX77jYj7nhuCyY="
+      crossorigin="anonymous"
+    />
+
+    <style>
+
+    /* Space out content a bit */
+    body {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    /* Custom page header */
+    .header {
+      padding-bottom: 20px;
+      padding-right: 15px;
+      padding-left: 15px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    /* Make the masthead heading the same height as the navigation */
+    .header h3 {
+      margin-top: 0;
+      margin-bottom: 0;
+      line-height: 40px;
+    }
+
+    .go-button {
+        height: 100px;
+        width: 200px;
+        background-color: green;
+        color: white;
+        font-size: 25px;
+    }
+
+    #total {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    #shards {
+        margin-bottom: 20px;
+    }
+
+    /* #hits {
+        padding: 20px;
+        border: 2px solid grey
+    } */
+
+    .divider {
+        margin: 20px;
+    }
+    </style>
+
+    <title>ES profile</title>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js" integrity="sha256-4OrICDjBYfKefEbVT7wETRLNFkuq4TJV5WLGvjqpGAk=" crossorigin="anonymous"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js" integrity="sha256-g6iAfvZp+nDQ2TdTR/VVKJf3bGro4ub5fvWSWVRi2NE=" crossorigin="anonymous"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">
+      <div class="header clearfix">
+        <nav>
+          <div class="pull-right">
+            <form class="form-inline" id="form">
+              <a class="btn" href="javascript: resetZoom();">Reset zoom</a>
+              <a class="btn" href="javascript: clear();">Clear</a>
+              <div class="form-group">
+                <input type="text" class="form-control" id="term">
+              </div>
+              <a class="btn btn-primary" href="javascript: search();">Search</a>
+            </form>
+          </div>
+        </nav>
+        <h3 class="text-muted">ES profile</h3>
+      </div>
+      <div id="chart">
+      </div>
+      <hr>
+      <div id="details">
+      </div>
+      <div id="total">
+      </div>
+      <div id="shards" style="display: none;">
+          Pick a shard:
+      </div>
+      <div class="input-container">
+          <div class="inputter">
+              <input type='text' id="url" placeholder="full url"></input>
+          </div>
+          <div class="inputter">
+              <input type='text' id="user" placeholder="user"></input>
+          </div>
+          <div class="inputter">
+              <input type='password' id="pass" placeholder="password"</input>
+          </div>
+          <div class="inputter">
+              <textarea rows=20 cols=40 id="json-holder" placeholder="PASTE JSON HERE"></textarea>
+          </div>
+          <div class="inputter">
+              <button class="go-button" id='go'>GO</button>
+          </div>
+      </div>
+      <div class="divider"></div>
+      <div id="bottom-bit" style="display: none">
+          <fieldset>
+            <legend>Hits:</legend>
+            <div id="hits">
+            </div>
+          </fieldset>
+      </div>
+    </div>
+
+    <script type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.min.js"
+      integrity="sha256-r7j1FXNTvPzHR41+V71Jvej6fIq4v4Kzu5ee7J/RitM="
+      crossorigin="anonymous">
+    </script>
+    <script type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.min.js"
+      integrity="sha256-z0A2CQF8xxCKuOJsn4sJ5HBjxiHHRAfTX8hDF4RSN5s="
+      crossorigin="anonymous">
+    </script>
+    <script type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/spiermar/d3-flame-graph@1.0.4/dist/d3.flameGraph.min.js"
+      integrity="sha256-I1CkrWbmjv+GWjgbulJ4i0vbzdrDGfxqdye2qNlhG3Q="
+      crossorigin="anonymous">
+    </script>
+
+    <script type="text/javascript">
+    var flameGraph = d3
+    .flameGraph()
+    .width(960)
+    .cellHeight(18)
+    .transitionDuration(750)
+    .transitionEase(d3.easeCubic)
+    .sort(true)
+    //Example to sort in reverse order
+    //.sort(function(a,b){ return d3.descending(a.name, b.name);})
+    .title('');
+
+// Example on how to use custom tooltips using d3-tip.
+var tip = d3
+    .tip()
+    .direction('s')
+    .offset([8, 0])
+    .attr('class', 'd3-flame-graph-tip')
+    .html(function(d) {
+        return 'name: ' + d.data.name + ', value: ' + d.data.value;
+    });
+
+flameGraph.tooltip(tip);
+
+// Example on how to use custom labels
+// var label = function(d) {
+//  return "name: " + d.data.name + ", value: " + d.data.value;
+// }
+
+// flameGraph.label(label);
+function init(data) {
+    d3
+        .select('#chart')
+        .datum(data)
+        .call(flameGraph);
+}
+
+var holder = document.getElementById('json-holder');
+
+// For instance:
+// holder.value = `{"query": {"bool": {"filter": {"bool": {"must_not": [{"term": {"block_up_next": true}}], "must": [{"term": {"is_public": true}}, {"range": {"quality_score": {"gte": 0.2}}}, {"range": {"plays": {"gte": 10}}}]}}, "must": {"function_score": {"query": {"more_like_this": {"fields": ["discover_tag", "genre", "cloudcast_name", "owner.name"], "max_query_terms": 12, "like": [{"_type": "cloudcast", "_id": 150843434, "_index": "mixcloud_search_read"}], "min_term_freq": 1}}, "functions": [{"field_value_factor": {"field": "owner.boost"}}]}}}}}`;
+var pass = document.getElementById('pass');
+var url = document.getElementById('url');
+var user = document.getElementById('user');
+var go = document.getElementById('go');
+var total = document.getElementById('total');
+var shards = document.getElementById('shards');
+var hits = document.getElementById('hits');
+var bottom = document.getElementById('bottom-bit');
+
+var globalData;
+
+function getShardInfo(shard) {
+    var shardId = shard.id;
+    // There's one search per shard for this query
+    var search = shard.searches[0];
+    // There's one query per search for this query
+    var query = search.query[0];
+    return getQueryInfo(query);
+}
+
+function getQueryInfo(query) {
+    return {
+        name: query.description,
+        value: query.time_in_nanos,
+        children: query.children ? query.children.map(i => getQueryInfo(i)) : []
+    };
+}
+
+function displayShard(obj, shard_idx) {
+    var data = getShardInfo(obj.profile.shards[shard_idx]);
+    total.innerText = `Total time: ${obj.took}ms`;
+    d3
+        .select('#chart')
+        .datum(data)
+        .call(flameGraph);
+}
+
+function init() {
+    var json = JSON.parse(holder.value.trim());
+    var body = {
+        pass: pass.value,
+        user: user.value,
+        url: url.value,
+        json
+    };
+
+    fetch('/query', {
+        method: 'post',
+        body: JSON.stringify(body),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(i => i.json())
+        .then(obj => {
+            if (obj.error) {
+                total.innerText = obj.error.reason;
+                return
+            }
+            globalData = obj;
+            shards.style.display = 'block';
+            bottom.style.display = 'block';
+            while (shards.firstChild) {
+                shards.removeChild(shards.firstChild);
+            }
+            obj.profile.shards.forEach((i, idx) => {
+                const e = document.createElement('button')
+                e.innerText = `${i.id}`
+                e.addEventListener('click', () => { displayShard(obj, idx) }, false);
+                shards.appendChild(e)
+            })
+            while (hits.firstChild) {
+                hits.removeChild(hits.firstChild);
+            }
+            if (!obj.hits.hits.length) {
+                hits.innerHTML = `<p>NO HITS</p>`
+            } else {
+                obj.hits.hits.forEach((i, idx) => {
+                    const e = document.createElement('p')
+                    e.innerText = `${i._id} - ${i._source.cloudcast_name} by ${i._source.owner.name}`
+                    e.addEventListener('click', () => { alert(JSON.stringify(i, null, 2)) }, false);
+                    hits.appendChild(e)
+                })
+            }
+            displayShard(obj, 0);
+        })
+        .catch(err => {
+            total.innerText = err;
+        });
+}
+
+go.addEventListener('click', init, false);
+
+document.getElementById('form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    search();
+});
+
+function search() {
+    var term = document.getElementById('term').value;
+    flameGraph.search(term);
+}
+
+function clear() {
+    document.getElementById('term').value = '';
+    flameGraph.clear();
+}
+
+function resetZoom() {
+    flameGraph.resetZoom();
+}
+
+function onClick(d) {
+    console.info('Clicked on ' + d.data.name);
+}
+</script>
+  </body>
+</html>
