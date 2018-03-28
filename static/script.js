@@ -16,7 +16,8 @@ var tip = d3
     .offset([8, 0])
     .attr('class', 'd3-flame-graph-tip')
     .html(function(d) {
-        return 'name: ' + d.data.name + ', value: ' + d.data.value;
+        return `<div style="max-width: 500px;"><div>time(ms): ${d.data.value /
+            1000000}</div><div>function: ${d.data.name}</div></div>`; // convert from nanos to millis
     });
 
 flameGraph.tooltip(tip);
@@ -35,7 +36,6 @@ function init(data) {
 }
 
 var holder = document.getElementById('json-holder');
-
 var pass = document.getElementById('pass');
 var url = document.getElementById('url');
 var user = document.getElementById('user');
@@ -44,6 +44,15 @@ var total = document.getElementById('total');
 var shards = document.getElementById('shards');
 var hits = document.getElementById('hits');
 var bottom = document.getElementById('bottom-bit');
+
+var oldUrl = localStorage.getItem('url');
+var oldJson = localStorage.getItem('json');
+if (oldUrl) {
+    url.value = oldUrl;
+}
+if (oldJson) {
+    holder.value = oldJson;
+}
 
 var globalData;
 
@@ -87,12 +96,12 @@ function doOrErr(fn, err) {
 }
 
 function init() {
-    var json = null
+    var json = null;
     doOrErr(() => {
         json = JSON.parse(holder.value.trim());
     }, "Can't parse JSON value");
     if (!json) {
-        return
+        return;
     }
     var body = {
         pass: pass.value,
@@ -100,6 +109,9 @@ function init() {
         url: url.value,
         json
     };
+
+    window.localStorage.setItem('url', url.value);
+    window.localStorage.setItem('json', JSON.stringify(json));
 
     fetch('/query', {
         method: 'post',
@@ -146,6 +158,7 @@ function init() {
                     e.innerText = `${i._id} - ${i._source.cloudcast_name} by ${
                         i._source.owner.name
                     }`;
+                    e.style.cursor = 'pointer';
                     e.addEventListener(
                         'click',
                         () => {
