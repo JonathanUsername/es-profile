@@ -60,8 +60,14 @@ function getShardInfo(shard) {
     var shardId = shard.id;
     // There's one search per shard for this query
     var search = shard.searches[0];
+    if (shard.searches.length > 1) {
+        total.innerText += ' (more than one search found but not displayed)'
+    }
     // There's one query per search for this query
     var query = search.query[0];
+    if (search.query.length > 1) {
+        total.innerText += ' (more than one query found but not displayed)'
+    }
     return getQueryInfo(query);
 }
 
