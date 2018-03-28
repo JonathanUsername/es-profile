@@ -22,19 +22,7 @@ var tip = d3
 
 flameGraph.tooltip(tip);
 
-// Example on how to use custom labels
-// var label = function(d) {
-//  return "name: " + d.data.name + ", value: " + d.data.value;
-// }
-
-// flameGraph.label(label);
-function init(data) {
-    d3
-        .select('#chart')
-        .datum(data)
-        .call(flameGraph);
-}
-
+var globalData;
 var holder = document.getElementById('json-holder');
 var pass = document.getElementById('pass');
 var url = document.getElementById('url');
@@ -52,53 +40,6 @@ if (oldUrl) {
 }
 if (oldJson) {
     holder.value = oldJson;
-}
-
-var globalData;
-
-function getShardInfo(shard) {
-    var shardId = shard.id;
-    // There's one search per shard for this query
-    var search = shard.searches[0];
-    if (shard.searches.length > 1) {
-        total.innerText += ' (more than one search found but not displayed)'
-    }
-    // There's one query per search for this query
-    var query = search.query[0];
-    if (search.query.length > 1) {
-        total.innerText += ' (more than one query found but not displayed)'
-    }
-    return getQueryInfo(query);
-}
-
-function getQueryInfo(query) {
-    return {
-        name: query.description,
-        value: query.time_in_nanos,
-        children: query.children ? query.children.map(i => getQueryInfo(i)) : []
-    };
-}
-
-function displayShard(obj, shard_idx) {
-    var data = getShardInfo(obj.profile.shards[shard_idx]);
-    total.innerText = `Total time: ${obj.took}ms`;
-    d3
-        .select('#chart')
-        .datum(data)
-        .call(flameGraph);
-}
-
-function doOrErr(fn, err) {
-    let whoops = false;
-    try {
-        fn();
-    } catch (e) {
-        total.innerText = err;
-        whoops = true;
-    }
-    if (whoops) {
-        throw Error(err);
-    }
 }
 
 function init() {
@@ -182,7 +123,53 @@ function init() {
         });
 }
 
-go.addEventListener('click', init, false);
+function getShardInfo(shard) {
+    var shardId = shard.id;
+
+    // TODO: handle multiple searches/queries
+
+    var search = shard.searches[0];
+    if (shard.searches.length > 1) {
+        total.innerText += ' (more than one search found but not displayed)';
+    }
+
+    var query = search.query[0];
+    if (search.query.length > 1) {
+        total.innerText += ' (more than one query found but not displayed)';
+    }
+    return getQueryInfo(query);
+}
+
+function getQueryInfo(query) {
+    // Pack tree into the data flamegraph expects
+    return {
+        name: query.description,
+        value: query.time_in_nanos,
+        children: query.children ? query.children.map(i => getQueryInfo(i)) : []
+    };
+}
+
+function displayShard(obj, shard_idx) {
+    var data = getShardInfo(obj.profile.shards[shard_idx]);
+    total.innerText = `Total time: ${obj.took}ms`;
+    d3
+        .select('#chart')
+        .datum(data)
+        .call(flameGraph);
+}
+
+function doOrErr(fn, err) {
+    let whoops = false;
+    try {
+        fn();
+    } catch (e) {
+        total.innerText = err;
+        whoops = true;
+    }
+    if (whoops) {
+        throw Error(err);
+    }
+}
 
 document.getElementById('form').addEventListener('submit', function(event) {
     event.preventDefault();
@@ -206,3 +193,5 @@ function resetZoom() {
 function onClick(d) {
     console.info('Clicked on ' + d.data.name);
 }
+
+go.addEventListener('click', init, false);
