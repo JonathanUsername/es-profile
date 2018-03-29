@@ -42,9 +42,17 @@
     .go-button {
         height: 100px;
         width: 200px;
-        background-color: green;
         color: white;
         font-size: 25px;
+        display: inline-block;
+    }
+
+    .good {
+        background-color: green;
+    }
+
+    .danger {
+        background-color: gold;
     }
 
     #total {
@@ -70,6 +78,9 @@
     }
     .inputter textarea {
         width: 100%;
+    }
+    .side-by-side > * {
+        display: inline-block;
     }
     </style>
 
@@ -129,8 +140,13 @@
           <div class="inputter">
               <textarea rows=20 cols=40 id="json-holder" placeholder="PASTE JSON HERE"></textarea>
           </div>
-          <div class="inputter">
-              <button class="go-button" id='go'>GO</button>
+          <div class="inputter side-by-side">
+              <button class="go-button good" id='go'>GO</button>
+              <button class="go-button danger" id='hammer'>HAMMER</button>
+              <div>
+                  <label for='reqsec'>Requests/sec (if hammering)</label>
+                  <input type='number' id="reqsec" value=5></input>
+              </div>
           </div>
       </div>
     </div>
