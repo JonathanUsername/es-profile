@@ -11,8 +11,8 @@ If you're trying to dig into something similar and can't afford the paid-for alt
 - Supports basic authentication. Because who would need anything more?
 - Quick "hammer" function to flood the endpoint with requests as a small stress test. For masochists that like to DDoS themselves.
 
-## Gorgeous interface
-Just look at this. I'm speechless. Move over, Jony Ive.
+## Interface
+Move over, Jony Ive:
 
 ![Picture of interface](https://user-images.githubusercontent.com/7237525/38099122-b670fb26-3371-11e8-907d-d601a0755144.png)
 
