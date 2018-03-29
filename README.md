@@ -15,3 +15,8 @@ If you're trying to dig into something similar and can't afford the paid-for alt
 Just look at this. I'm speechless. Move over, Jony Ive.
 
 ![Picture of interface](https://user-images.githubusercontent.com/7237525/38099122-b670fb26-3371-11e8-907d-d601a0755144.png)
+
+Get this, it's even interactive:
+
+
+![Picture of flame graph](https://user-images.githubusercontent.com/7237525/38099869-9c71ece2-3373-11e8-896e-2eb85089d1f2.gif)
